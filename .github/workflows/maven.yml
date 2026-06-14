@@ -2,7 +2,11 @@ name: Confirm Flaky Test ChiSquareTestTest#testChisqSelectorMap
 
 on:
   push:
+    branches:
+      - master
   pull_request:
+    branches:
+      - master
 
 jobs:
   nondex-check:
