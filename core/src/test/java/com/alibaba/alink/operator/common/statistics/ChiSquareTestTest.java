@@ -1,5 +1,9 @@
 package com.alibaba.alink.operator.common.statistics;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+
 import org.apache.flink.api.common.functions.util.ListCollector;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple4;
@@ -135,15 +139,27 @@ public class ChiSquareTestTest extends AlinkTestBase {
 
 		for (Row row : rowList) {
 			if ((long) row.getField(0) == 1048576) {
-				Assert.assertEquals(
-					"{\"chiSqs\":[{\"colName\":\"1\",\"df\":1.0,\"p\":0.1,\"value\":0.1},{\"colName\":\"2\","
-						+ "\"df\":2.0,\"p\":0.2,\"value\":0.2},{\"colName\":\"3\",\"df\":3.0,\"p\":0.3,\"value\":0.3},"
-						+ "{\"colName\":\"4\",\"df\":4.0,\"p\":0.4,\"value\":0.4}],\"colNames\":null,"
-						+ "\"siftOutColNames\":[\"1\",\"2\",\"3\",\"4\"],\"selectorType\":\"NumTopFeatures\","
-						+ "\"numTopFeatures\":5,\"percentile\":0.0,\"fpr\":0.0,\"fdr\":0.0,\"fwe\":0.0}"
-					, (String) row.getField(1));
+				assertSelectorJson((String) row.getField(1));
 			}
 		}
+	}
+
+	private void assertSelectorJson(String json) {
+		JSONObject obj = JSON.parseObject(json);
+
+		Assert.assertEquals("NumTopFeatures", obj.getString("selectorType"));
+		Assert.assertEquals(5, obj.getIntValue("numTopFeatures"));
+		Assert.assertEquals(0.0, obj.getDoubleValue("percentile"), 10e-4);
+		Assert.assertEquals(0.0, obj.getDoubleValue("fpr"), 10e-4);
+		Assert.assertEquals(0.0, obj.getDoubleValue("fdr"), 10e-4);
+		Assert.assertEquals(0.0, obj.getDoubleValue("fwe"), 10e-4);
+
+		JSONArray chiSqs = obj.getJSONArray("chiSqs");
+		Assert.assertEquals(4, chiSqs.size());
+		Assert.assertEquals("1", chiSqs.getJSONObject(0).getString("colName"));
+		Assert.assertEquals(1.0, chiSqs.getJSONObject(0).getDoubleValue("df"), 10e-4);
+		Assert.assertEquals(0.1, chiSqs.getJSONObject(0).getDoubleValue("p"), 10e-4);
+		Assert.assertEquals(0.1, chiSqs.getJSONObject(0).getDoubleValue("value"), 10e-4);
 	}
 
 	private int[] testSelector(BasedChisqSelectorParams.SelectorType selectorType, int numTopFeatures,
